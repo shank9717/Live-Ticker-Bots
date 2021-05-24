@@ -14,8 +14,7 @@ KEYS_MAP = {
 
 MILLNAMES = ['', 'K', 'M', 'B', 'T']
 
-KEYS = ['Last Price', 'Currency Code', 'Market Capitalization', 'Daily Volume', '52 week low',
-        '52 week high', 'Day low', 'Day high', 'PE Ratio', 'Change Value', 'Change Percentage']
+KEYS = ['Last Price', 'Currency Code', 'Change Value', 'Change Percentage']
 
 COMMODITIES = ['GOLD', 'SILVER', 'CRUDEOIL', 'COPPER', 'ZINC', 'COTTON', 'LEAD', 'ALUMINIUM']
 

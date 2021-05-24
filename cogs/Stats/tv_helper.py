@@ -107,8 +107,6 @@ def on_message(ws, message):
                             value = value[word]
                         else:
                             value = data[word]
-                    if key in list(final_data.data.keys()):
-                        continue
                     final_data.data[key] = value
                 except:
                     if lookup_key == 'trade.price':
