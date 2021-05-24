@@ -31,9 +31,14 @@ class MetaHelpers(commands.Cog):
         logging.info("Updating values: " + current_value + ", " + change_value)
 
         await self.bot.change_presence(activity=Activity(type=ActivityType.playing, name=change_value))
+        unique_guilds = []
         for channel in self.bot.get_all_channels():
-            member = channel.guild.get_member(self.bot.user.id)
+            unique_guilds.append(channel.guild)
+        
+        for guild in set(unique_guilds):
+            member = guild.get_member(self.bot.user.id)
             await member.edit(nick=current_value)
+
         logging.info("Updated values")
 
     async def start_update(self):
