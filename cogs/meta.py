@@ -2,7 +2,6 @@ from discord.ext import commands
 
 from discord.ext import tasks
 from discord import Activity, ActivityType
-import random
 
 import cogs.Stats.tv_helper as tv_helper
 import logging
@@ -21,11 +20,11 @@ class MetaHelpers(commands.Cog):
         except:
             return
   
-        sign = '+' if float(cv) > 0 else '-'
+        sign = '⬈' if float(cv) > 0 else '⬊'
         currency = '$'
 
-        current_value = 'SGX ({})'
-        current_value = current_value.format('{} {}'.format(currency, ltp))
+        current_value = 'SGX {} ({})'
+        current_value = current_value.format(sign, '{} {}'.format(currency, ltp))
 
         change_value = '{} ({}%)'.format(cv, cvp)
         logging.info("Updating values: " + current_value + ", " + change_value)
@@ -38,6 +37,8 @@ class MetaHelpers(commands.Cog):
         for guild in set(unique_guilds):
             member = guild.get_member(self.bot.user.id)
             await member.edit(nick=current_value)
+            await self.set_colors(member, guild, sign)
+
 
         logging.info("Updated values")
 
@@ -45,6 +46,28 @@ class MetaHelpers(commands.Cog):
         self.update_values.start()
         thread = Thread(target=tv_helper.main, args=('in1!', {}))
         thread.start()
+
+    async def set_colors(self, member, guild, sign):
+        if not member.guild_permissions.manage_roles:
+            return
+        ticker_red_role = None
+        ticker_green_role = None
+        for role in guild.roles:
+            if role.name == 'ticker-red':
+                ticker_red_role = role
+            elif role.name == 'ticker-green':
+                ticker_green_role = role
+        
+        if (ticker_green_role != None and ticker_red_role != None):
+            try:
+                if (sign == '⬈'):
+                    await member.remove_roles(ticker_red_role)
+                    await member.add_roles(ticker_green_role)
+                else:
+                    await self.bot.add_roles(member, ticker_red_role)
+                    await member.remove_roles(ticker_green_role)
+            except:
+                pass
 
 def setup(bot):
     bot.add_cog(MetaHelpers(bot))
