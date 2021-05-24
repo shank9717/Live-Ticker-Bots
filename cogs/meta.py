@@ -27,7 +27,7 @@ class MetaHelpers(commands.Cog):
         current_value = current_value.format(sign, '{} {}'.format(currency, ltp))
 
         change_value = '{} ({}%)'.format(cv, cvp)
-        logging.info("Updating values: " + current_value + ", " + change_value)
+        logging.info("Updating values: " + ltp + ", " + change_value)
 
         unique_guilds = []
         for channel in self.bot.get_all_channels():

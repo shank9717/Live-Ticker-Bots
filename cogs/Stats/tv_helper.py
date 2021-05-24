@@ -71,6 +71,12 @@ def on_open(ws, symbol):
         message = as_binary(
             pack_json('quote_add_symbols', constants.SESSION_TOKEN, symbol, {'flags': ["force_permission"]}))
         ws.send(message)
+        header = 1
+        while True:
+            message = as_binary('~h~{}'.format(header))
+            header += 1
+            ws.send(message)
+            time.sleep(10)
 
     thread.start_new_thread(run, ())
 
@@ -191,14 +197,15 @@ def main(ticker_main, result):
         if debug:
             websocket.enableTrace(True)
 
-        ws = websocket.WebSocketApp(
-            socket_url,
-            on_close=on_close,
-            on_error=on_error,
-            on_message=on_message
-        )
-        ws.on_open = functools.partial(on_open, symbol=final_data.symbol)
+        while True:
+            ws = websocket.WebSocketApp(
+                socket_url,
+                on_close=on_close,
+                on_error=on_error,
+                on_message=on_message
+            )
+            ws.on_open = functools.partial(on_open, symbol=final_data.symbol)
 
-        ws.run_forever(ping_interval=10)
-        result[ticker_main.upper()] = final_data.data
-        final_data.data = {}
+            ws.run_forever(ping_interval=10)
+            result[ticker_main.upper()] = final_data.data
+            final_data.data = {}
