@@ -29,15 +29,18 @@ class MetaHelpers(commands.Cog):
         change_value = '{} ({}%)'.format(cv, cvp)
         logging.info("Updating values: " + current_value + ", " + change_value)
 
-        await self.bot.change_presence(activity=Activity(type=ActivityType.playing, name=change_value))
         unique_guilds = []
         for channel in self.bot.get_all_channels():
             unique_guilds.append(channel.guild)
         
         for guild in set(unique_guilds):
             member = guild.get_member(self.bot.user.id)
-            await member.edit(nick=current_value)
-            await self.set_colors(member, guild, sign)
+            try:
+                await member.edit(nick=current_value)
+                await self.bot.change_presence(activity=Activity(type=ActivityType.playing, name=change_value))
+                await self.set_colors(member, guild, sign)
+            except:
+                return
 
 
         logging.info("Updated values")
