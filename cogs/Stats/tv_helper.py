@@ -127,8 +127,8 @@ def on_message(ws, message):
         cvp = final_data.data['Change Percentage']
 
         with open('data.txt', 'w') as f:
-            f.write("{}\n{}\n{}\n{}".format(ltp, currency, cv, cvp))
-            time.sleep(1)
+            print("{}\n{}\n{}\n{}".format(ltp, currency, cv, cvp), file=f, flush=True)
+            time.sleep(2)
 
         final_data.symbol = ''
 

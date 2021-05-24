@@ -13,7 +13,7 @@ class MetaHelpers(commands.Cog):
         self.bot = bot
         self.bot.add_listener(self.start_update, 'on_ready')
 
-    @tasks.loop(seconds=1.0)
+    @tasks.loop(seconds=2.0)
     async def update_values(self):
         try:
             with open('data.txt', 'r') as f:
@@ -28,7 +28,7 @@ class MetaHelpers(commands.Cog):
         current_value = current_value.format('{} {}'.format(currency, ltp))
 
         change_value = '{} ({}%)'.format(cv, cvp)
-        logging.info("Updating values")
+        logging.info("Updating values: " + current_value + ", " + change_value)
 
         await self.bot.change_presence(activity=Activity(type=ActivityType.playing, name=change_value))
         for channel in self.bot.get_all_channels():
