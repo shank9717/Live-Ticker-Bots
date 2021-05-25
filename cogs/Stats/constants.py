@@ -19,3 +19,5 @@ KEYS = ['Last Price', 'Currency Code', 'Change Value', 'Change Percentage']
 COMMODITIES = ['GOLD', 'SILVER', 'CRUDEOIL', 'COPPER', 'ZINC', 'COTTON', 'LEAD', 'ALUMINIUM']
 
 SESSION_TOKEN = 'qs_FC9yFZEUbfca'
+
+TTL = 300

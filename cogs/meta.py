@@ -16,7 +16,15 @@ class MetaHelpers(commands.Cog):
     async def update_values(self):
         try:
             with open('data.txt', 'r') as f:
-                ltp, currency, cv, cvp = [ticker_data[:-1] for ticker_data in f.readlines()]
+                check_data = f.readlines()
+
+            if (check_data[0]) == '##RELOAD##\n':
+                with open('data.txt', 'w') as f:
+                    print("", file=f, flush=True)
+                thread = Thread(target=tv_helper.main, args=('nifty', {}))
+                thread.start()
+                return
+            ltp, currency, cv, cvp = [ticker_data[:-1] for ticker_data in check_data]
         except:
             return
   
@@ -46,8 +54,10 @@ class MetaHelpers(commands.Cog):
         logging.info("Updated values")
 
     async def start_update(self):
+        with open('data.txt', 'w') as f:
+            print("", file=f, flush=True)
         self.update_values.start()
-        thread = Thread(target=tv_helper.main, args=('in1!', {}))
+        thread = Thread(target=tv_helper.main, args=('nifty', {}))
         thread.start()
 
     async def set_colors(self, member, guild, sign):
@@ -69,8 +79,8 @@ class MetaHelpers(commands.Cog):
                 else:
                     await member.add_roles(ticker_red_role)
                     await member.remove_roles(ticker_green_role)
-            except:
-                pass
+            except Exception as e:
+                logging.error(e)
 
 def setup(bot):
     bot.add_cog(MetaHelpers(bot))

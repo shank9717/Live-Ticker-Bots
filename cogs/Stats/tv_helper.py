@@ -26,6 +26,9 @@ final_data = threading.local()
 final_data.data = {}
 final_data.symbol = ''
 
+start_time_data = threading.local()
+start_time_data.start = ''
+
 def get_session_token():
     return ''.join(list(str(random.choice([random.choice(string.ascii_letters), random.choice([num for num in range(10)])])) for _ in range(12)))
 
@@ -128,6 +131,9 @@ def on_message(ws, message):
         except:
             pass
 
+    if (time.time() - start_time_data.start) > constants.TTL:
+        ws.close()
+
     if final_data.data != {}:
         final_data.data['Symbol'] = final_data.symbol
         ltp = final_data.data['Last Price']
@@ -140,6 +146,9 @@ def on_message(ws, message):
             time.sleep(2)
 
         final_data.symbol = ''
+    
+    
+
 
 
 def merge_dicts(origin_dict, *optional_dicts):
@@ -150,7 +159,9 @@ def merge_dicts(origin_dict, *optional_dicts):
 
 
 def main(ticker_main, result):
-    global debug, final_data
+    global debug, final_data, start_time_data
+    start_time_data.start = time.time()
+
     final_data.data = {}
     final_data.symbol = ''
     commodities = constants.COMMODITIES
@@ -199,15 +210,19 @@ def main(ticker_main, result):
         socket_url = 'wss://data.tradingview.com/socket.io/websocket'
         websocket.enableTrace(True)
 
-        while True:
-            ws = websocket.WebSocketApp(
-                socket_url,
-                on_close=on_close,
-                on_error=on_error,
-                on_message=on_message
+        ws = websocket.WebSocketApp(
+            socket_url,
+            on_close=on_close,
+            on_error=on_error,
+            on_message=on_message
 
-            )
-            ws.on_open = functools.partial(on_open, symbol=final_data.symbol)
+        )
+        ws.on_open = functools.partial(on_open, symbol=final_data.symbol)
 
-            ws.run_forever()
+        ws.run_forever(ping_interval=10)
+
+        with open('data.txt', 'w') as f:
+            print("##RELOAD##", file=f, flush=True)
+        return
+
 
