@@ -21,7 +21,7 @@ class MetaHelpers(commands.Cog):
             if (check_data[0]) == '##RELOAD##\n':
                 with open('data.txt', 'w') as f:
                     print("", file=f, flush=True)
-                thread = Thread(target=tv_helper.main, args=('nifty', {}))
+                thread = Thread(target=tv_helper.main, args=('in1!', {}))
                 thread.start()
                 return
             ltp, currency, cv, cvp = [ticker_data[:-1] for ticker_data in check_data]
@@ -57,7 +57,7 @@ class MetaHelpers(commands.Cog):
         with open('data.txt', 'w') as f:
             print("", file=f, flush=True)
         self.update_values.start()
-        thread = Thread(target=tv_helper.main, args=('nifty', {}))
+        thread = Thread(target=tv_helper.main, args=('in1!', {}))
         thread.start()
 
     async def set_colors(self, member, guild, sign):
