@@ -67,7 +67,7 @@ class MetaHelpers(commands.Cog):
                     await member.remove_roles(ticker_red_role)
                     await member.add_roles(ticker_green_role)
                 else:
-                    await self.bot.add_roles(member, ticker_red_role)
+                    await member.add_roles(ticker_red_role)
                     await member.remove_roles(ticker_green_role)
             except:
                 pass
