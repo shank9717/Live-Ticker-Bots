@@ -71,12 +71,6 @@ def on_open(ws, symbol):
         message = as_binary(
             pack_json('quote_add_symbols', constants.SESSION_TOKEN, symbol, {'flags': ["force_permission"]}))
         ws.send(message)
-        header = 1
-        while True:
-            message = as_binary('~h~{}'.format(header))
-            header += 1
-            ws.send(message)
-            time.sleep(10)
 
     thread.start_new_thread(run, ())
 
@@ -87,7 +81,7 @@ def on_message(ws, message):
     if debug:
         print('{} < {}'.format(time.time(), message))
 
-    if re.match(r'~m~4~m~~h~\d*', message):
+    if re.match(r'~m~\d*?~m~~h~\d*', message):
         ws.send(message)
 
     main_msg = re.findall(r'(~m~\d*?~m~)(.*?)(?=(~m~\d*?~m~|$))', message)
