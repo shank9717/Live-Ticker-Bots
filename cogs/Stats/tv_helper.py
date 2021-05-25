@@ -12,6 +12,9 @@ import websocket
 import cogs.Stats.constants as constants
 import credentials
 
+import logging
+import string, random
+
 try:
     import thread
 except ImportError:
@@ -23,6 +26,8 @@ final_data = threading.local()
 final_data.data = {}
 final_data.symbol = ''
 
+def get_session_token():
+    return ''.join(list(str(random.choice([random.choice(string.ascii_letters), random.choice([num for num in range(10)])])) for _ in range(12)))
 
 def pack_json(message, *args):
     return json.dumps({
@@ -39,7 +44,7 @@ def pack_pb(command, data):
 
 
 def on_error(ws, error):
-    print(error)
+    print("Got error --- " + str(error))
 
 
 def on_close(ws):
@@ -62,14 +67,15 @@ def on_open(ws, symbol):
     switch_protocol(ws, 'json')
 
     def run(*args):
+        session_token = get_session_token()
         message = as_binary(pack_json('set_data_quality', 'low'))
         ws.send(message)
         message = as_binary(pack_json('set_auth_token', credentials.tradingview['auth_token']))
         ws.send(message)
-        message = as_binary(pack_json('quote_create_session', constants.SESSION_TOKEN))
+        message = as_binary(pack_json('quote_create_session', 'qs_' + session_token))
         ws.send(message)
         message = as_binary(
-            pack_json('quote_add_symbols', constants.SESSION_TOKEN, symbol, {'flags': ["force_permission"]}))
+            pack_json('quote_add_symbols', 'qs_' + session_token, symbol, {'flags': ["force_permission"]}))
         ws.send(message)
 
     thread.start_new_thread(run, ())
@@ -78,18 +84,23 @@ def on_open(ws, symbol):
 def on_message(ws, message):
     global debug, final_data
 
-    if debug:
-        print('{} < {}'.format(time.time(), message))
+    print('Recieved -- {} < {}'.format(time.time(), message))
 
     if re.match(r'~m~\d*?~m~~h~\d*', message):
+        print("Sending ping --- " + message)
         ws.send(message)
+        return
 
     main_msg = re.findall(r'(~m~\d*?~m~)(.*?)(?=(~m~\d*?~m~|$))', message)
 
     for msg in main_msg:
         new_msg = eval(msg[1].replace('false', 'False').replace('true', 'True').replace('null', 'None'))
-        if new_msg['m'] == 'symbol_error':
-            ws.close()
+        try:
+            if new_msg['m'] == 'symbol_error':
+                print("Error -- " + str(new_msg))
+                ws.close()
+        except:
+            print("error: " + str(new_msg))
         try:
             data = new_msg['p'][1]['v']
             for key in constants.KEYS:
@@ -186,8 +197,7 @@ def main(ticker_main, result):
         final_data.symbol = f'{exchange}:{final_data.symbol}'
 
         socket_url = 'wss://data.tradingview.com/socket.io/websocket'
-        if debug:
-            websocket.enableTrace(True)
+        websocket.enableTrace(True)
 
         while True:
             ws = websocket.WebSocketApp(
@@ -195,9 +205,9 @@ def main(ticker_main, result):
                 on_close=on_close,
                 on_error=on_error,
                 on_message=on_message
+
             )
             ws.on_open = functools.partial(on_open, symbol=final_data.symbol)
 
-            ws.run_forever(ping_interval=10)
-            result[ticker_main.upper()] = final_data.data
-            final_data.data = {}
+            ws.run_forever()
+
