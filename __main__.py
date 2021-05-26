@@ -46,7 +46,7 @@ def main():
 
     # Restrict bot usage to inside guild channels only.
     bot.add_check(no_dm_check)
-
+    bot.remove_command('help')
     bot.run(token)
 
 
