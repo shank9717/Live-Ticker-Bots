@@ -143,7 +143,6 @@ def on_message(ws, message):
 
         with open('data.txt', 'w') as f:
             print("{}\n{}\n{}\n{}".format(ltp, currency, cv, cvp), file=f, flush=True)
-            time.sleep(2)
 
         final_data.symbol = ''
     
