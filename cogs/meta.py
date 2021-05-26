@@ -29,12 +29,13 @@ class MetaHelpers(commands.Cog):
             return
   
         sign = '⬈' if float(cv) > 0 else '⬊'
+        direction = '' if float(cv) < 0 else '+'
         currency = '$'
 
-        current_value = 'SGX {} ({})'
+        current_value = 'SGX {} {}'
         current_value = current_value.format(sign, '{} {}'.format(currency, ltp))
 
-        change_value = '{} ({}%)'.format(cv, cvp)
+        change_value = '{}{} ({}%)'.format(direction, cv, cvp)
         logging.info("Updating values: " + ltp + ", " + change_value)
 
         unique_guilds = []
