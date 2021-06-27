@@ -6,26 +6,38 @@ from discord import Activity, ActivityType
 import cogs.Stats.tv_helper as tv_helper
 import logging
 from threading import Thread
+from queue import LifoQueue
 
 class MetaHelpers(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.current_thread = None
+        self.queue = LifoQueue()
         self.bot.add_listener(self.start_update, 'on_ready')
 
     @tasks.loop(seconds=2.0)
     async def update_values(self):
         try:
-            with open('data.txt', 'r') as f:
-                check_data = f.readlines()
-
-            if (check_data[0]) == '##RELOAD##\n':
-                with open('data.txt', 'w') as f:
-                    print("", file=f, flush=True)
-                thread = Thread(target=tv_helper.main, args=('in1!', {}))
-                thread.start()
+            if not self.queue.empty():
+                check_data = self.queue.get()
+                while not self.queue.empty():
+                    try:
+                        self.queue.get()
+                    except Exception as e:
+                        logging.error(e)
+                        continue
+            else:
+                check_data = ['##RELOAD##']
+            if check_data[0] == '##RELOAD##':
+                self.current_thread.close()
+                self.current_thread.join()
+                self.current_thread = tv_helper.StocksApi('in1!', self.queue)
+                self.current_thread.start()
                 return
-            ltp, currency, cv, cvp = [ticker_data[:-1] for ticker_data in check_data]
-        except:
+
+            ltp, currency, cv, cvp = check_data
+        except Exception as e:
+            logging.error(e)
             return
         
         ltp = round(float(ltp), 2)
@@ -37,7 +49,7 @@ class MetaHelpers(commands.Cog):
         current_value = current_value.format(sign, '{} {}'.format(currency, ltp))
 
         change_value = '{}{} ({}%)'.format(direction, cv, cvp)
-        logging.info("Updating values: " + str(ltp) + ", " + change_value)
+        logging.debug("Updating values: " + str(ltp) + ", " + change_value)
 
         unique_guilds = []
         for channel in self.bot.get_all_channels():
@@ -56,11 +68,9 @@ class MetaHelpers(commands.Cog):
         logging.info("Updated values")
 
     async def start_update(self):
-        with open('data.txt', 'w') as f:
-            print("", file=f, flush=True)
         self.update_values.start()
-        thread = Thread(target=tv_helper.main, args=('in1!', {}))
-        thread.start()
+        self.current_thread = tv_helper.StocksApi('in1!', self.queue)
+        self.current_thread.start()
 
     async def set_colors(self, member, guild, sign):
         if not member.guild_permissions.manage_roles:

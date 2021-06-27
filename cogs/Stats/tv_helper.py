@@ -1,182 +1,64 @@
-import copy
 import functools
 import json
 import re
-import subprocess
 import threading
+import logging
 import time
-
 import requests
 import websocket
 
 import cogs.Stats.constants as constants
 import credentials
 
-import logging
-import string, random
 
-try:
-    import thread
-except ImportError:
-    import _thread as thread
-
-debug = False
-
-final_data = threading.local()
-final_data.data = {}
-final_data.symbol = ''
-
-start_time_data = threading.local()
-start_time_data.start = ''
-
-def get_session_token():
-    return ''.join(list(str(random.choice([random.choice(string.ascii_letters), random.choice([num for num in range(10)])])) for _ in range(12)))
-
-def pack_json(message, *args):
-    return json.dumps({
-        'm': message,
-        'p': args,
-    }, indent=None, separators=(',', ':'))
-
-
-def pack_pb(command, data):
-    cmd = 'node pack.js'.split(' ') + [command, data]
-    pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    out, err = pipe.communicate()
-    return out
-
-
-def on_error(ws, error):
-    print("Got error --- " + str(error))
-
-
-def on_close(ws):
-    print('Closed')
-
-
-def as_binary(message):
-    if debug:
-        print('~m~{}~m~{}'.format(len(message), message))
-    return '~m~%d~m~%s' % (len(message), message)
-
-
-def switch_protocol(ws, protocol):
-    message = as_binary(pack_json('switch_protocol', protocol))
-    ws.send(message)
-
-
-def on_open(ws, symbol):
-    print('Opened')
-    switch_protocol(ws, 'json')
-
-    def run(*args):
-        session_token = get_session_token()
-        message = as_binary(pack_json('set_data_quality', 'low'))
-        ws.send(message)
-        message = as_binary(pack_json('set_auth_token', credentials.tradingview['auth_token']))
-        ws.send(message)
-        message = as_binary(pack_json('quote_create_session', 'qs_' + session_token))
-        ws.send(message)
-        message = as_binary(
-            pack_json('quote_add_symbols', 'qs_' + session_token, symbol, {'flags': ["force_permission"]}))
-        ws.send(message)
-
-    thread.start_new_thread(run, ())
-
-
-def on_message(ws, message):
-    global debug, final_data
-
-    print('Recieved -- {} < {}'.format(time.time(), message))
-
-    if re.match(r'~m~\d*?~m~~h~\d*', message):
-        print("Sending ping --- " + message)
-        ws.send(message)
-        return
-
-    main_msg = re.findall(r'(~m~\d*?~m~)(.*?)(?=(~m~\d*?~m~|$))', message)
-
-    for msg in main_msg:
-        new_msg = eval(msg[1].replace('false', 'False').replace('true', 'True').replace('null', 'None'))
+class StocksApi(threading.Thread):
+    def __init__(self, ticker_main, queue):
+        """
+            ticker_main -> User provided ticker
+            result -> Result dict with ticker as key and details as value
+            symbol -> Symbol obtained from TradingView
+        """
+        threading.Thread.__init__(self)
+        self.final_data = {}
+        self.ticker = ticker_main.upper()
+        self.queue = queue
+        
+    def __exit__(self):
         try:
-            if new_msg['m'] == 'symbol_error':
-                print("Error -- " + str(new_msg))
-                ws.close()
-        except:
-            print("error: " + str(new_msg))
+            self.ws.close()
+        except Exception as e:
+            logging.error("Error closing ws: ", e)
+
+    def run(self):
+        self.start_time_data = time.time()   
+        ticker_cp = self.ticker
+        with requests.Session() as session:
+            self.symbol = self.get_symbol(session, ticker_cp, self.ticker)
+            if self.symbol is None:
+                return
+            
+            socket_url = 'wss://data.tradingview.com/socket.io/websocket'
+
+            self.ws = websocket.WebSocketApp(
+                socket_url,
+                on_close=self.on_close,
+                on_error=self.on_error
+            )
+            self.ws.on_open = functools.partial(self.on_open)
+            self.ws.on_message = functools.partial(self.on_message)
+            self.ws.run_forever(ping_interval=10)
+        
+        self.queue.put('##RELOAD##')
+
+    def close(self):
         try:
-            data = new_msg['p'][1]['v']
-            for key in constants.KEYS:
-                value = {}
-                lookup_key = constants.KEYS_MAP[key]
-                try:
-                    for word in lookup_key.split('.'):
-                        if value != {}:
-                            value = value[word]
-                        else:
-                            value = data[word]
-                    final_data.data[key] = value
-                except:
-                    if lookup_key == 'trade.price':
-                        try:
-                            lookup_key = 'lp'
-                            for word in lookup_key.split('.'):
-                                if value != {}:
-                                    value = value[word]
-                                else:
-                                    value = data[word]
-                            final_data.data[key] = value
-                        except:
-                            pass
-        except:
-            pass
+            self.ws.close()
+        except Exception as e:
+            logging.error("Error closing ws: ", e)
 
-    if (time.time() - start_time_data.start) > constants.TTL:
-        ws.close()
-
-    if final_data.data != {}:
-        final_data.data['Symbol'] = final_data.symbol
-        ltp = final_data.data['Last Price']
-        currency = final_data.data['Currency Code']
-        cv = final_data.data['Change Value']
-        cvp = final_data.data['Change Percentage']
-
-        with open('data.txt', 'w') as f:
-            print("{}\n{}\n{}\n{}".format(ltp, currency, cv, cvp), file=f, flush=True)
-
-        final_data.symbol = ''
-    
-    
-
-
-
-def merge_dicts(origin_dict, *optional_dicts):
-    copy_dict = copy.deepcopy(origin_dict)
-    for optional in optional_dicts:
-        copy_dict.update(optional)
-    return copy_dict
-
-
-def main(ticker_main, result):
-    global debug, final_data, start_time_data
-    start_time_data.start = time.time()
-
-    final_data.data = {}
-    final_data.symbol = ''
-    commodities = constants.COMMODITIES
-    ticker = ticker_main
-    with requests.Session() as session:
-        exchange = ''
-        ticker_vals = ticker.split(':')
-        if len(ticker_vals) >= 2:
-            exchange = ticker_vals[0]
-            ticker = ticker_vals[1]
-        else:
-            ticker = ticker_vals[0]
-
-        if ticker.upper() in commodities and exchange == '':
-            ticker = ticker.upper()
-            exchange = 'MCX'
+    def get_symbol(self, session, ticker, ticker_main):
+        ticker_parts = ticker.split(':')
+        ticker, exchange = self.process_ticker(ticker_parts)
 
         params = {
             'text': ticker.upper(),
@@ -191,37 +73,123 @@ def main(ticker_main, result):
         try:
             data = r.json()[0]
         except:
-            result[ticker_main.upper()] = None
-            return
+            self.result[ticker_main.upper()] = None
+            return None
         try:
             exchange = data['prefix']
         except:
             exchange = data['exchange']
         try:
             contracts = data['contracts']
-            final_data.symbol = contracts[0]['symbol']
+            symbol = contracts[0]['symbol']
         except:
-            final_data.symbol = data['symbol']
+            symbol = data['symbol']
 
-        final_data.symbol = final_data.symbol.replace('<em>', '').replace('</em>', '')
-        final_data.symbol = f'{exchange}:{final_data.symbol}'
+        symbol = symbol.replace('<em>', '').replace('</em>', '')
+        symbol = f'{exchange}:{symbol}'
+        return symbol
 
-        socket_url = 'wss://data.tradingview.com/socket.io/websocket'
-        websocket.enableTrace(True)
+    def process_ticker(self, ticker_parts):
+        exchange = ''
+        if len(ticker_parts) >= 2:
+            exchange = ticker_parts[0]
+            ticker = ticker_parts[1]
+        else:
+            ticker = ticker_parts[0]
 
-        ws = websocket.WebSocketApp(
-            socket_url,
-            on_close=on_close,
-            on_error=on_error,
-            on_message=on_message
+        if ticker.upper() in constants.COMMODITIES and exchange == '':
+            ticker = ticker.upper()
+            exchange = 'MCX'
 
-        )
-        ws.on_open = functools.partial(on_open, symbol=final_data.symbol)
+        return ticker, exchange
 
-        ws.run_forever(ping_interval=10)
+    def pack_json(self, message, *args):
+        return json.dumps({
+            'm': message,
+            'p': args,
+        }, indent=None, separators=(',', ':'))
 
-        with open('data.txt', 'w') as f:
-            print("##RELOAD##", file=f, flush=True)
-        return
+    def as_binary(self, message):
+        return '~m~%d~m~%s' % (len(message), message)
 
+    def switch_protocol(self, ws, protocol):
+        message = self.as_binary(self.pack_json('switch_protocol', protocol))
+        ws.send(message)
 
+    def on_error(self, ws, error):
+        logging.error(f'Error occured: {error}')
+
+    def on_close(self, ws):
+        logging.info('Closed')
+
+    def on_open(self, ws):
+        self.switch_protocol(ws, 'json')
+
+        def run():
+            message = self.as_binary(self.pack_json('set_data_quality', 'low'))
+            ws.send(message)
+            message = self.as_binary(self.pack_json('set_auth_token', credentials.tradingview['auth_token']))
+            ws.send(message)
+            message = self.as_binary(self.pack_json('quote_create_session', constants.SESSION_TOKEN))
+            ws.send(message)
+            message = self.as_binary(
+                self.pack_json('quote_add_symbols', constants.SESSION_TOKEN, self.symbol, {'flags': ["force_permission"]}))
+            ws.send(message)
+            message = self.as_binary(self.pack_json('quote_fast_symbols', constants.SESSION_TOKEN, self.symbol))
+            ws.send(message)
+        
+        thread = threading.Thread(target=run)
+        thread.start()
+        thread.join()
+
+    def on_message(self, ws, message):
+        if re.match(r'~m~\d*?~m~~h~\d*', message):
+            ws.send(message)
+
+        main_msg = re.findall(r'(~m~\d*?~m~)(.*?)(?=(~m~\d*?~m~|$))', message)
+
+        for msg in main_msg:
+            new_msg = eval(msg[1].replace('false', 'False').replace('true', 'True').replace('null', 'None'))
+            if new_msg['m'] == 'symbol_error':
+                ws.close()
+            try:
+                data = new_msg['p'][1]['v']
+                for key in constants.KEYS:
+                    value = {}
+                    lookup_key = constants.KEYS_MAP[key]
+                    try:
+                        for word in lookup_key.split('.'):
+                            if value != {}:
+                                value = value[word]
+                            else:
+                                value = data[word]
+                        self.final_data[key] = value
+                    except:
+                        if lookup_key == 'trade.price':
+                            try:
+                                lookup_key = 'lp'
+                                for word in lookup_key.split('.'):
+                                    if value != {}:
+                                        value = value[word]
+                                    else:
+                                        value = data[word]
+                                self.final_data[key] = value
+                            except:
+                                pass
+            except:
+                pass
+        
+        if (time.time() - self.start_time_data) > constants.TTL:
+            self.queue.put('##RELOAD##')
+            ws.close()
+            return
+
+        if self.final_data != {}:
+            self.final_data['Symbol'] = self.symbol
+            ltp = self.final_data['Last Price']
+            currency = self.final_data['Currency Code']
+            cv = self.final_data['Change Value']
+            cvp = self.final_data['Change Percentage']
+
+            self.queue.put((ltp, currency, cv, cvp))
+            
