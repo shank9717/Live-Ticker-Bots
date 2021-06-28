@@ -5,6 +5,7 @@ from discord import Activity, ActivityType
 
 import cogs.Stats.tv_helper as tv_helper
 import logging
+import asyncio
 from threading import Thread
 from queue import LifoQueue
 
@@ -29,8 +30,11 @@ class MetaHelpers(commands.Cog):
             else:
                 check_data = ['##RELOAD##']
             if check_data[0] == '##RELOAD##':
-                self.current_thread.close()
-                self.current_thread.join()
+                try:
+                    self.current_thread.join()
+                except:
+                    await asyncio.sleep(120)
+                    pass
                 self.current_thread = tv_helper.StocksApi('in1!', self.queue)
                 self.current_thread.start()
                 return
