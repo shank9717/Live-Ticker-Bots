@@ -23,7 +23,7 @@ def main():
 
     token = environ.get('BOT_TOKEN')
     if not token:
-        token = 'ODQ1OTU2MTc5MTA4MDM2NjA5.YKogFg._rPVY5bJc2Uwa06XQtDt-VEN3oY'
+        token = 'ODQ1OTU2MTc5MTA4MDM2NjA5.YKogFg.HE5_Ex6X1VXUVYcQHkveIWNEozo'
 
     allow_self_register = environ.get('ALLOW_DUEL_SELF_REGISTER')
     if allow_self_register:
