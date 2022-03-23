@@ -1,5 +1,6 @@
 import functools
 import json
+from queue import Queue
 import re
 import threading
 import logging
@@ -9,25 +10,26 @@ import websocket
 
 import cogs.Stats.constants as constants
 import credentials
-
+import multiprocessing
 
 class StocksApi(threading.Thread):
-    def __init__(self, ticker_main, queue):
+    def __init__(self, ticker_main: str, queue: Queue, stop_flag: bool = False):
         """
             ticker_main -> User provided ticker
             result -> Result dict with ticker as key and details as value
             symbol -> Symbol obtained from TradingView
         """
-        threading.Thread.__init__(self)
+        super(StocksApi, self).__init__()
         self.final_data = {}
         self.ticker = ticker_main.upper()
         self.queue = queue
+        self.stop_flag = stop_flag
         
     def __exit__(self):
         try:
             self.ws.close()
         except Exception as e:
-            logging.error("Error closing ws: ", e)
+            print("Error closing ws: ", e)
 
     def run(self):
         self.start_time_data = time.time()   
@@ -45,16 +47,29 @@ class StocksApi(threading.Thread):
                 on_error=self.on_error
             )
             self.ws.on_open = functools.partial(self.on_open)
-            self.ws.on_message = functools.partial(self.on_message)
-            self.ws.run_forever(ping_interval=10)
-        
-        self.queue.put('##RELOAD##')
+            self.ws.on_message = functools.partial(self.on_message)            
+            self.ws.keep_running = True 
 
+            self.wst = threading.Thread(target=self.ws.run_forever)
+            self.wst.daemon = True
+            self.wst.start()
+            self.stop_flag = False
+
+            while not self.stop_flag:          
+                if (time.time() - self.start_time_data) > constants.TTL:
+                    self.queue.put(['##RELOAD##'])
+                    break
+            self.close()
+        self.queue.put(['##RELOAD##'])
+
+    def stop(self):
+        self.stop_flag = True
+    
     def close(self):
         try:
             self.ws.close()
         except Exception as e:
-            logging.error("Error closing ws: ", e)
+            print("Error closing ws: ", e)
 
     def get_symbol(self, session, ticker, ticker_main):
         ticker_parts = ticker.split(':')
@@ -116,11 +131,11 @@ class StocksApi(threading.Thread):
         message = self.as_binary(self.pack_json('switch_protocol', protocol))
         ws.send(message)
 
-    def on_error(self, ws, error):
-        logging.error(f'Error occured: {error}')
+    def on_error(self, error):
+        print(f'Error occured: {error}')
 
-    def on_close(self, ws):
-        logging.info('Closed')
+    def on_close(self):
+        print('Closed')
 
     def on_open(self, ws):
         self.switch_protocol(ws, 'json')
@@ -179,10 +194,6 @@ class StocksApi(threading.Thread):
             except:
                 pass
         
-        if (time.time() - self.start_time_data) > constants.TTL:
-            self.queue.put('##RELOAD##')
-            ws.close()
-            return
 
         if self.final_data != {}:
             self.final_data['Symbol'] = self.symbol
@@ -191,5 +202,9 @@ class StocksApi(threading.Thread):
             cv = self.final_data['Change Value']
             cvp = self.final_data['Change Percentage']
 
+            
+            print("Internal Data: ", str(ltp), str(cv))
+            if not self.queue.empty():
+                self.queue.get_nowait()
             self.queue.put((ltp, currency, cv, cvp))
             
