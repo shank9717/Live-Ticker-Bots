@@ -158,53 +158,57 @@ class StocksApi(threading.Thread):
         thread.join()
 
     def on_message(self, ws, message):
-        if re.match(r'~m~\d*?~m~~h~\d*', message):
-            ws.send(message)
+        try:
+            if re.match(r'~m~\d*?~m~~h~\d*', message):
+                ws.send(message)
 
-        main_msg = re.findall(r'(~m~\d*?~m~)(.*?)(?=(~m~\d*?~m~|$))', message)
+            main_msg = re.findall(r'(~m~\d*?~m~)(.*?)(?=(~m~\d*?~m~|$))', message)
 
-        for msg in main_msg:
-            new_msg = eval(msg[1].replace('false', 'False').replace('true', 'True').replace('null', 'None'))
-            if new_msg['m'] == 'symbol_error':
-                ws.close()
-            try:
-                data = new_msg['p'][1]['v']
-                for key in constants.KEYS:
-                    value = {}
-                    lookup_key = constants.KEYS_MAP[key]
-                    try:
-                        for word in lookup_key.split('.'):
-                            if value != {}:
-                                value = value[word]
-                            else:
-                                value = data[word]
-                        self.final_data[key] = value
-                    except:
-                        if lookup_key == 'trade.price':
-                            try:
-                                lookup_key = 'lp'
-                                for word in lookup_key.split('.'):
-                                    if value != {}:
-                                        value = value[word]
-                                    else:
-                                        value = data[word]
-                                self.final_data[key] = value
-                            except:
-                                pass
-            except:
-                pass
-        
-
-        if self.final_data != {}:
-            self.final_data['Symbol'] = self.symbol
-            ltp = self.final_data['Last Price']
-            currency = self.final_data['Currency Code']
-            cv = self.final_data['Change Value']
-            cvp = self.final_data['Change Percentage']
-
+            for msg in main_msg:
+                try:
+                    new_msg = eval(msg[1].replace('false', 'False').replace('true', 'True').replace('null', 'None'))
+                    if 'm' in new_msg and new_msg['m'] == 'symbol_error':
+                        ws.close()
+                    data = new_msg['p'][1]['v']
+                    for key in constants.KEYS:
+                        value = {}
+                        lookup_key = constants.KEYS_MAP[key]
+                        try:
+                            for word in lookup_key.split('.'):
+                                if value != {}:
+                                    value = value[word]
+                                else:
+                                    value = data[word]
+                            self.final_data[key] = value
+                        except:
+                            if lookup_key == 'trade.price':
+                                try:
+                                    lookup_key = 'lp'
+                                    for word in lookup_key.split('.'):
+                                        if value != {}:
+                                            value = value[word]
+                                        else:
+                                            value = data[word]
+                                    self.final_data[key] = value
+                                except:
+                                    pass
+                except:
+                    pass
             
-            print("Internal Data: ", str(ltp), str(cv))
-            if not self.queue.empty():
-                self.queue.get_nowait()
-            self.queue.put((ltp, currency, cv, cvp))
-            
+
+            if self.final_data != {}:
+                self.final_data['Symbol'] = self.symbol
+                ltp = self.final_data['Last Price']
+                currency = self.final_data['Currency Code']
+                cv = self.final_data['Change Value']
+                cvp = self.final_data['Change Percentage']
+
+                
+                print("Internal Data: ", str(ltp), str(cv))
+                if not self.queue.empty():
+                    self.queue.get_nowait()
+                self.queue.put((ltp, currency, cv, cvp))
+                
+        except Exception as e:
+            print(e)
+            pass
