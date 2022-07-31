@@ -1,54 +1,57 @@
-import argparse
-import distutils.util
+import asyncio
+import configparser
 import logging
-from logging.handlers import TimedRotatingFileHandler
-from os import environ
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from discord import Intents
 from discord.ext import commands
 
+import constants
+
+config = configparser.ConfigParser()
 
 
-def setup():
-    logging.basicConfig(format='{asctime}:{levelname}:{name}:{message}', style='{',
+def setup() -> None:
+    logging.basicConfig(format='{asctime}:{levelname}:{name}:{message}',
                         datefmt='%d-%m-%Y %H:%M:%S', level=logging.INFO,
                         handlers=[logging.StreamHandler(),
-                                  TimedRotatingFileHandler('./log', when='D',
-                                                           backupCount=3, utc=True)])
+                                  RotatingFileHandler('./log', mode='a', maxBytes=1 * 1024 * 1024,
+                                                      backupCount=2, encoding=None, delay=0)])
+    load_variables()
 
 
-def main():
-    parser = argparse.ArgumentParser()
+def load_variables() -> None:
+    with open(constants.CONFIG_FILE_PATH + constants.CONFIG_FILE_NAME, 'r', encoding='utf-8') as f:
+        properties = f.read()
+    config.read_string(properties)
 
-    token = environ.get('BOT_TOKEN')
-    if not token:
-        token = 'ODQ2MzE3NTQwMTI0MDAwMjU2.YKtwoQ.H-dB91wmifXEczMP-wJQcEumNtA'
 
-    allow_self_register = environ.get('ALLOW_DUEL_SELF_REGISTER')
-    if allow_self_register:
-        ALLOW_DUEL_SELF_REGISTER = bool(distutils.util.strtobool(allow_self_register))
+def no_dm_check(ctx: commands.Context) -> bool:
+    if ctx.guild is None:
+        raise commands.NoPrivateMessage('Private messages not permitted.')
+    return True
 
+
+async def main():
     setup()
+    token = config.get('TickerDetails', 'auth_token')
 
     intents = Intents.default()
     intents.members = True
-    bot = commands.Bot(command_prefix='.', intents=intents)
-    cogs = [file.stem for file in Path('cogs').glob('*.py')]
-    for extension in cogs:
-        bot.load_extension(f'cogs.{extension}')
-    logging.info(f'Cogs loaded: {", ".join(bot.cogs)}')
+    bot: commands.Bot = commands.Bot(command_prefix='#-#', intents=intents)
+    bot.config: configparser.ConfigParser = config
 
-    def no_dm_check(ctx):
-        if ctx.guild is None:
-            raise commands.NoPrivateMessage('Private messages not permitted.')
-        return True
+    async with bot:
+        cogs = [file.stem for file in Path('cogs').glob('*.py')]
+        for extension in cogs:
+            await bot.load_extension(f'cogs.{extension}')
+        logging.info(f'Cogs loaded: {", ".join(bot.cogs)}')
 
-    # Restrict bot usage to inside guild channels only.
-    bot.add_check(no_dm_check)
-    bot.remove_command('help')
-    bot.run(token)
+        # Restrict bot usage to inside guild channels only.
+        bot.add_check(no_dm_check)
+        await bot.start(token)
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

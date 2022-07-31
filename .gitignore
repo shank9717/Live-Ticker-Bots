@@ -1,15 +1,8 @@
 *.pyc
 *.pyo
 *temp*
-*gif_output.gif
-*alwayshasbeen.mp4
-*activity.png
-*temp.png
-*temp.webp
-*temp.gif
 *__pycache__*
 log*
-*covid_india.png
-*covid_state.png
 .idea*
-*data.txt
+.venv*
+.vscode*
