@@ -13,7 +13,7 @@ config = configparser.ConfigParser()
 
 
 def setup() -> None:
-    logging.basicConfig(format='{asctime}:{levelname}:{name}:{message}',
+    logging.basicConfig(format='{asctime}:{levelname}:{name}:{message}', style='{',
                         datefmt='%d-%m-%Y %H:%M:%S', level=logging.INFO,
                         handlers=[logging.StreamHandler(),
                                   RotatingFileHandler('./log', mode='a', maxBytes=1 * 1024 * 1024,
