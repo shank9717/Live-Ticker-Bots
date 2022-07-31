@@ -76,7 +76,7 @@ class Launcher(commands.Cog):
             except:
                 logging.error(f'Couldn\'t update values for guild: {str(guild.name)}')
                 return
-        logging.info(f'Updated values : {direction} {self.currency} {str(ltp)} / {str(change_value)}')
+        logging.info(f'Updated values : {direction}{str(ltp)} / {str(change_value)}')
 
     async def start_update(self):
         self.current_thread = tv_helper.StocksApi(self.ticker_symbol, self.queue)
