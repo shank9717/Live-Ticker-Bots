@@ -2,42 +2,42 @@ version: "3.2"
 services:
     bnfTicker:
         container_name: bnfTicker
-        image: 'shashankullas/tickerbot:1.0.0'
+        image: 'shashankullas/tickerbot:1.0.1'
         restart: always
         environment:
             - CONFIG_FILE=config_bnf.ini
 
     btcTicker:
         container_name: btcTicker
-        image: 'shashankullas/tickerbot:1.0.0'
+        image: 'shashankullas/tickerbot:1.0.1'
         restart: always
         environment:
             - CONFIG_FILE=config_btc.ini
 
     djiTicker:
         container_name: djiTicker
-        image: 'shashankullas/tickerbot:1.0.0'
+        image: 'shashankullas/tickerbot:1.0.1'
         restart: always
         environment:
             - CONFIG_FILE=config_dji.ini
     
     niftyTicker:
         container_name: niftyTicker
-        image: 'shashankullas/tickerbot:1.0.0'
+        image: 'shashankullas/tickerbot:1.0.1'
         restart: always
         environment:
             - CONFIG_FILE=config_nifty.ini
     
     sgxTicker:
         container_name: sgxTicker
-        image: 'shashankullas/tickerbot:1.0.0'
+        image: 'shashankullas/tickerbot:1.0.1'
         restart: always
         environment:
             - CONFIG_FILE=config_sgx.ini
     
     vixTicker:
         container_name: vixTicker
-        image: 'shashankullas/tickerbot:1.0.0'
+        image: 'shashankullas/tickerbot:1.0.1'
         restart: always
         environment:
             - CONFIG_FILE=config_vix.ini
