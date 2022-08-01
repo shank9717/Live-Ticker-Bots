@@ -9,11 +9,11 @@ services:
         deploy:
           resources:
             limits:
-              memory: '64m'
-              cpus: '100m'
+              memory: 64M
+              cpus: 0.1
             reservations:
-              memory: '32m'
-              cpus: '20m'
+              memory: 32M
+              cpus: 0.02
 
     btcTicker:
         container_name: btcTicker
@@ -24,11 +24,11 @@ services:
         deploy:
           resources:
             limits:
-              memory: '64m'
-              cpus: '100m'
+              memory: 64M
+              cpus: 0.1
             reservations:
-              memory: '32m'
-              cpus: '20m'
+              memory: 32M
+              cpus: 0.02
 
     djiTicker:
         container_name: djiTicker
@@ -39,11 +39,11 @@ services:
         deploy:
           resources:
             limits:
-              memory: '64m'
-              cpus: '100m'
+              memory: 64M
+              cpus: 0.1
             reservations:
-              memory: '32m'
-              cpus: '20m'
+              memory: 32M
+              cpus: 0.02
     
     niftyTicker:
         container_name: niftyTicker
@@ -54,11 +54,11 @@ services:
         deploy:
           resources:
             limits:
-              memory: '64m'
-              cpus: '100m'
+              memory: 64M
+              cpus: 0.1
             reservations:
-              memory: '32m'
-              cpus: '20m'
+              memory: 32M
+              cpus: 0.02
     
     sgxTicker:
         container_name: sgxTicker
@@ -69,11 +69,11 @@ services:
         deploy:
           resources:
             limits:
-              memory: '64m'
-              cpus: '100m'
+              memory: 64M
+              cpus: 0.1
             reservations:
-              memory: '32m'
-              cpus: '20m'
+              memory: 32M
+              cpus: 0.02
     
     vixTicker:
         container_name: vixTicker
@@ -84,8 +84,8 @@ services:
         deploy:
           resources:
             limits:
-              memory: '64m'
-              cpus: '100m'
+              memory: 64M
+              cpus: 0.1
             reservations:
-              memory: '32m'
-              cpus: '20m'
+              memory: 32M
+              cpus: 0.02
