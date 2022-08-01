@@ -1,2 +1,2 @@
 #!/bin/sh
-docker compose up -d
+docker stack deploy --compose-file docker-compose.yml live-bots
