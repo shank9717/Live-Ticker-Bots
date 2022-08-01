@@ -13,7 +13,7 @@ services:
               cpus: '100m'
             reservations:
               memory: '32m'
-              cpus: '100m'
+              cpus: '20m'
 
     btcTicker:
         container_name: btcTicker
@@ -28,7 +28,7 @@ services:
               cpus: '100m'
             reservations:
               memory: '32m'
-              cpus: '100m'
+              cpus: '20m'
 
     djiTicker:
         container_name: djiTicker
@@ -43,7 +43,7 @@ services:
               cpus: '100m'
             reservations:
               memory: '32m'
-              cpus: '100m'
+              cpus: '20m'
     
     niftyTicker:
         container_name: niftyTicker
@@ -58,7 +58,7 @@ services:
               cpus: '100m'
             reservations:
               memory: '32m'
-              cpus: '100m'
+              cpus: '20m'
     
     sgxTicker:
         container_name: sgxTicker
@@ -73,7 +73,7 @@ services:
               cpus: '100m'
             reservations:
               memory: '32m'
-              cpus: '100m'
+              cpus: '20m'
     
     vixTicker:
         container_name: vixTicker
@@ -88,4 +88,4 @@ services:
               cpus: '100m'
             reservations:
               memory: '32m'
-              cpus: '100m'
+              cpus: '20m'
