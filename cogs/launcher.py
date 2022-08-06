@@ -54,7 +54,7 @@ class Launcher(commands.Cog):
 
         ltp = round(float(ltp), 2)
         sign = '⬈' if float(cv) > 0 else '⬊'
-        direction = '-' if float(cv) < 0 else '+'
+        direction = '-' if float(cv) < 0 else ''
 
         current_value = '{} {} {}'
         current_value = current_value.format(self.ticker_nickname, sign, '{} {}'.format(self.currency, ltp))
