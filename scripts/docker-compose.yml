@@ -2,7 +2,7 @@ version: "3.2"
 services:
     bnfTicker:
         container_name: bnfTicker
-        image: 'shashankullas/tickerbot:1.0.3'
+        image: 'shashankullas/tickerbot:1.0.4'
         restart: always
         environment:
             - CONFIG_FILE=config_bnf.ini
@@ -17,7 +17,7 @@ services:
 
     btcTicker:
         container_name: btcTicker
-        image: 'shashankullas/tickerbot:1.0.3'
+        image: 'shashankullas/tickerbot:1.0.4'
         restart: always
         environment:
             - CONFIG_FILE=config_btc.ini
@@ -32,7 +32,7 @@ services:
 
     djiTicker:
         container_name: djiTicker
-        image: 'shashankullas/tickerbot:1.0.3'
+        image: 'shashankullas/tickerbot:1.0.4'
         restart: always
         environment:
             - CONFIG_FILE=config_dji.ini
@@ -47,7 +47,7 @@ services:
     
     niftyTicker:
         container_name: niftyTicker
-        image: 'shashankullas/tickerbot:1.0.3'
+        image: 'shashankullas/tickerbot:1.0.4'
         restart: always
         environment:
             - CONFIG_FILE=config_nifty.ini
@@ -62,7 +62,7 @@ services:
     
     sgxTicker:
         container_name: sgxTicker
-        image: 'shashankullas/tickerbot:1.0.3'
+        image: 'shashankullas/tickerbot:1.0.4'
         restart: always
         environment:
             - CONFIG_FILE=config_sgx.ini
@@ -77,7 +77,7 @@ services:
     
     vixTicker:
         container_name: vixTicker
-        image: 'shashankullas/tickerbot:1.0.3'
+        image: 'shashankullas/tickerbot:1.0.4'
         restart: always
         environment:
             - CONFIG_FILE=config_vix.ini
